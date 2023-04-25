@@ -32,7 +32,7 @@ type message struct {
 type site struct {
 	id          int
 	logicalTime int
-	tab         [N][2]int
+	tab         [N + 1][2]int
 }
 
 func (s *site) run() {
@@ -45,6 +45,7 @@ func (s *site) run() {
 
 	for {
 		fmt.Scanln(&rcvmsg)
+		msgType = -1
 		mutex.Lock()
 		l.Printf("message reçu : %s\n", rcvmsg)
 
@@ -52,8 +53,8 @@ func (s *site) run() {
 		//l.Printf("%q\n", tab_allkeyval)
 		for _, keyval := range tab_allkeyval {
 			tab_keyval := strings.Split(keyval[1:], keyval[0:1])
-			//l.Printf("  %q\n", tab_keyval)
-			//l.Printf("  key : %s  val : %s\n", tab_keyval[0], tab_keyval[1])
+			l.Printf("  %q\n", tab_keyval)
+			l.Printf("  key : %s  val : %s\n", tab_keyval[0], tab_keyval[1])
 			//如果不是自己该收的转发，应该发给app层的丢弃
 			if tab_keyval[0] == "receiver" {
 				receiver, _ = strconv.Atoi(tab_keyval[1])
@@ -97,6 +98,7 @@ func (s *site) run() {
 		}
 		if msgType == -1 {
 			rcvmsg = ""
+			mutex.Unlock()
 			continue
 		}
 		s.handleMessage(msg)
@@ -105,13 +107,15 @@ func (s *site) run() {
 	}
 }
 
+// /=type=ack/=sender=3/=hlg=56/=receiver=1
 func (s *site) handleMessage(msg message) {
 	s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
 	switch msg.msgType {
 	case request:
 		s.tab[msg.sender][0] = 0
 		s.tab[msg.sender][1] = msg.logicalTime
-		fmt.Printf("Sending ack from %d to %d with logical time %d\n", s.id, msg.sender, s.logicalTime)
+		//fmt.Printf("Sending ack from %d to %d with logical time %d\n", s.id, msg.sender, s.logicalTime)
+		fmt.Printf("/=type=ack/=sender=%d/=hlg=%d/=receiver=%d", s.id, s.logicalTime, msg.sender)
 	case release:
 		s.tab[msg.sender][0] = 1
 		s.tab[msg.sender][1] = msg.logicalTime
@@ -125,7 +129,8 @@ func (s *site) handleMessage(msg message) {
 		s.tab[s.id][1] = s.logicalTime
 		for i := 0; i < N; i++ {
 			if i != s.id {
-				fmt.Printf("Sending request from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
+				//fmt.Printf("Sending request from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
+				fmt.Printf("/=type=request/=sender=%d/=hlg=%d/=receiver=%d", s.id, s.logicalTime, i)
 			}
 		}
 	case finSC:
@@ -133,7 +138,8 @@ func (s *site) handleMessage(msg message) {
 		s.tab[s.id][1] = s.logicalTime
 		for i := 0; i < N; i++ {
 			if i != s.id {
-				fmt.Printf("Sending release from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
+				//fmt.Printf("Sending release from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
+				fmt.Printf("/=type=release/=sender=%d/=hlg=%d/=receiver=%d", s.id, s.logicalTime, i)
 			}
 		}
 	}
@@ -152,7 +158,8 @@ func (s *site) checkCriticalSection() {
 			}
 		}
 		if isSmallest {
-			fmt.Printf("Sending debutSC from %d to %d \n", s.id, s.id*-1)
+			//fmt.Printf("Sending debutSC from %d to %d \n", s.id, s.id*-1)
+			fmt.Printf("/=type=permetSC/=sender=%d/=hlg=%d/=receiver=%d", s.id, s.logicalTime, -1*s.id)
 		}
 	}
 }
@@ -175,10 +182,10 @@ func main() {
 	flag.Parse()
 
 	var s site
-	fmt.Print("Enter the site ID: ")
+	//fmt.Print("Enter the site ID: ")
 	s.id = nom
 	s.logicalTime = 0
-	for i := 0; i < N; i++ {
+	for i := 0; i < N+1; i++ {
 		s.tab[i][0] = 1
 	}
 
