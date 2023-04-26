@@ -68,51 +68,115 @@
 <body>
 	<div style="margin: 20%;">
         <h1>网络拍卖会</h1>
+        <form>
+            <p>
+                host : <input id="host" type="text" size="10" value="localhost">
+                port : <input id="port" type="text" maxlength="5" size="5" value="4444">
+                <br>
+                <button id="connecter">Connecter</button>
+                <button id="fermer">Fermer</button>
+            </p>
+        </form>
         <p>当前最高价格:</p>
         <p id="max" class="highestPrice"></p>
         <div id="highestBidDisplay">$0</div>
         <label for="bidInput">输入你想出价的价格:</label>
         <input type="number" id="bidInput">
 		<button id="putPrice" style="margin: 0 auto; display: block;">提交出价</button>
-
+        <hr>
+        <b> Logs </b>
+        <div id="logs" style="max-height: 40vh;overflow-y: scroll;"></div>
     </div>
 
 	<script>
+        function addToLog(message) {
+            var logs = document.getElementById("logs");
+            var d = document.createElement("div");
+            d.textContent = message;
+            logs.appendChild(d);
+            logs.scroll(0, logs.scrollHeight);
+        }
+        //创建从服务器接收json的websocket
+        var ws1
+        document.getElementById("connecter").onclick = function(evt) {
+            if (ws1) {
+                return false;
+            }
+
+            var host = document.getElementById("host").value;
+            var port = document.getElementById("port").value;
+
+            addToLog("Tentative de connexion")
+            addToLog("host = " + host + ", port = " + port)
+
+            ws1 = new WebSocket("ws://"+host+":"+port+"/ws1");
+
+            ws1.onopen = function(evt) {
+                addToLog("Websocket ouverte");
+            }
+
+            ws1.onclose = function(evt) {
+                addToLog("Websocket fermée");
+                ws = null;
+            }
+
+            ws1.onmessage = function(evt) {
+                const data = JSON.parse(evt.data);
+                const maxElement = document.getElementById('max');
+                maxElement.textContent = data.number
+                addToLog("Réception: " + evt.data);
+            }
+
+            ws1.onerror = function(evt) {
+                addToLog("Erreur: " + evt.data);
+            }
+            return false;
+        }
+        ////创建向服务器发送json的websocket
+        var ws2
         document.getElementById('putPrice').onclick = function(evt) {
             const input = document.getElementById('bidInput')
             const price = input.value
             //获取出价并重置input
-            alert("提交成功")
+            addToLog("提交成功")
             input.value = ''
             const data = { number: price };
+            addToLog("Pret: " + data.number);
             const jsonData = JSON.stringify(data);
 
-            const socket = new WebSocket('ws://localhost:4444/ws');
-            socket.addEventListener('open', function(event) {   //监听socket开启就发送数据
-                socket.send(jsonData);
-            });
-            return false
+            if (ws2==null) {
+                var host = document.getElementById("host").value;
+                var port = document.getElementById("port").value;
+                ws2 = new WebSocket("ws://" + host + ":" + port + "/ws2");
+                addToLog("新建");
+                //监听socket开启就发送数据
+                ws2.addEventListener('open', function(evt) {
+                    ws2.send(jsonData);
+                    addToLog("Emission: " + data.number);
+                });
+            }
+            //直接发送数据
+            ws2.send(jsonData);
+            addToLog("Emission: " + data.number);
+
+            ws2.onopen = function(evt) {
+                addToLog("Websocket ouverte");
+            }
+
+            ws2.onclose = function(evt) {
+                addToLog("Websocket fermée");
+                ws = null;
+            }
+
+            ws2.onmessage = function(evt) {
+                addToLog("Réception: " + evt.data);
+            }
+
+            ws2.onerror = function(evt) {
+                addToLog("Erreur: " + evt.data);
+            }
+            return false;
         }
-        const socket = new WebSocket("ws://localhost:4444/test");
-
-        socket.onopen = function(event) {
-            console.log("WebSocket连接已打开");
-        };
-
-        socket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            const maxElement = document.getElementById('max');
-            maxElement.textContent = data.number
-            console.log("接收到JSON数据：", data.number);
-        };
-
-        socket.onclose = function(event) {
-            console.log("WebSocket连接已关闭");
-        };
-
-        socket.onerror = function(event) {
-            console.log("WebSocket连接错误");
-        };
 
 
         // 前端调用后端API获取当前最高价格

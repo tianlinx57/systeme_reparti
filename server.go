@@ -14,23 +14,20 @@ type myData struct {
 	Number string `json:"number"`
 }
 
-func do_webserver(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Bonjour depuis le serveur web en Go !")
-}
-
-func do_websocket(w http.ResponseWriter, r *http.Request) {
+func receiveMsg(w http.ResponseWriter, r *http.Request) {
 	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
-
-	cnn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("upgrade:", err)
 		return
 	}
+	defer conn.Close()
 
+	fmt.Println("已经建立连接")
 	for {
-		_, message, err := cnn.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		var data myData
 		err = json.Unmarshal(message, &data)
 		if err != nil {
@@ -44,23 +41,25 @@ func do_websocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+func sendMsg(w http.ResponseWriter, r *http.Request) {
 	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		// 处理错误
+		fmt.Println("upgrade:", err)
 		return
 	}
 	defer conn.Close()
+
+	fmt.Println("已经建立连接")
 	num := 0
 	for {
 		num = num + 1
 		msg := &myData{
 			Number: strconv.Itoa(num),
 		}
-		err = conn.WriteJSON(msg)
+		err := conn.WriteJSON(msg)
 		time.Sleep(time.Duration(2) * time.Second)
 		if err != nil {
 			// 处理错误
@@ -68,15 +67,14 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
 func main() {
 	var port = flag.String("port", "4444", "n° de port")
 	var addr = flag.String("addr", "localhost", "nom/adresse machine")
 
 	flag.Parse()
-
-	http.HandleFunc("/", do_webserver)
-	http.HandleFunc("/ws", do_websocket)
-	http.HandleFunc("/test", wsHandler)
+	http.HandleFunc("/ws1", sendMsg)
+	http.HandleFunc("/ws2", receiveMsg)
 	http.ListenAndServe(*addr+":"+*port, nil)
 
 }
