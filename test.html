@@ -132,7 +132,9 @@
         ws.onmessage = function (evt) {
             const data = JSON.parse(evt.data);
             const maxElement = document.getElementById('max');
-            maxElement.textContent = data.number;
+            if (data.number != null) {
+                maxElement.textContent = data.number;
+            }
             addToLog("Réception: " + evt.data);
         }
 

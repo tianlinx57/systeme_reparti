@@ -109,22 +109,25 @@ func (s *site) run() {
 
 // /=type=ack/=sender=3/=hlg=56/=receiver=1
 func (s *site) handleMessage(msg message) {
-	s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
 	switch msg.msgType {
 	case request:
+		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
 		s.tab[msg.sender][0] = 0
 		s.tab[msg.sender][1] = msg.logicalTime
 		//fmt.Printf("Sending ack from %d to %d with logical time %d\n", s.id, msg.sender, s.logicalTime)
 		fmt.Printf("/=type=ack/=sender=%d/=hlg=%d/=receiver=%d", s.id, s.logicalTime, msg.sender)
 	case release:
+		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
 		s.tab[msg.sender][0] = 1
 		s.tab[msg.sender][1] = msg.logicalTime
 	case ack:
+		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
 		if s.tab[msg.sender][0] != 0 {
 			s.tab[msg.sender][0] = 2
 			s.tab[msg.sender][1] = msg.logicalTime
 		}
 	case demandeSC:
+		s.logicalTime = s.logicalTime + 1
 		s.tab[s.id][0] = 0
 		s.tab[s.id][1] = s.logicalTime
 		for i := 0; i < N; i++ {
@@ -134,6 +137,7 @@ func (s *site) handleMessage(msg message) {
 			}
 		}
 	case finSC:
+		s.logicalTime = s.logicalTime + 1
 		s.tab[s.id][0] = 1
 		s.tab[s.id][1] = s.logicalTime
 		for i := 0; i < N; i++ {
