@@ -56,21 +56,66 @@
 			border-radius: 4px;
 			box-shadow: 2px 2px 5px #888;
 		}
+        .highestPrice {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            padding: 10px;
+        }
 	</style>
 </head>
 <body>
 	<div style="margin: 20%;">
         <h1>网络拍卖会</h1>
         <p>当前最高价格:</p>
+        <p id="max" class="highestPrice"></p>
         <div id="highestBidDisplay">$0</div>
         <label for="bidInput">输入你想出价的价格:</label>
         <input type="number" id="bidInput">
-        <!-- <button onclick="submitBid()" style="margin: 0 auto; display: block;">提交出价</button> -->
-		<button onclick="getMaxPrice()" style="margin: 0 auto; display: block;">提交出价</button>
+		<button id="putPrice" style="margin: 0 auto; display: block;">提交出价</button>
+
     </div>
 
 	<script>
-		// 前端调用后端API获取当前最高价格
+        document.getElementById('putPrice').onclick = function(evt) {
+            const input = document.getElementById('bidInput')
+            const price = input.value
+            //获取出价并重置input
+            alert("提交成功")
+            input.value = ''
+            const data = { number: price };
+            const jsonData = JSON.stringify(data);
+
+            const socket = new WebSocket('ws://localhost:4444/ws');
+            socket.addEventListener('open', function(event) {   //监听socket开启就发送数据
+                socket.send(jsonData);
+            });
+            return false
+        }
+        const socket = new WebSocket("ws://localhost:4444/test");
+
+        socket.onopen = function(event) {
+            console.log("WebSocket连接已打开");
+        };
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const maxElement = document.getElementById('max');
+            maxElement.textContent = data.number
+            console.log("接收到JSON数据：", data.number);
+        };
+
+        socket.onclose = function(event) {
+            console.log("WebSocket连接已关闭");
+        };
+
+        socket.onerror = function(event) {
+            console.log("WebSocket连接错误");
+        };
+
+
+        // 前端调用后端API获取当前最高价格
 		function getMaxPrice() {
 			// 替换为实际的后端API URL
 			fetch("http://localhost:8080")
