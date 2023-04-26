@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 type myData struct {
-	Number int `json:"number"`
+	Number string `json:"number"`
 }
 
 func do_webserver(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +37,7 @@ func do_websocket(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("read:", err)
 			return
 		}
-		num := data.Number
+		num, _ := strconv.Atoi(data.Number)
 
 		// 输出结果
 		fmt.Printf("num = %d\n", num)
@@ -57,7 +58,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		num = num + 1
 		msg := &myData{
-			Number: num,
+			Number: strconv.Itoa(num),
 		}
 		err = conn.WriteJSON(msg)
 		time.Sleep(time.Duration(2) * time.Second)
