@@ -21,9 +21,6 @@ nettoyer () {
 
 
 
-
-
-
 mkfifo /tmp/in_A /tmp/in_B /tmp/in_C
 mkfifo /tmp/out_A /tmp/out_B /tmp/out_C
 ./prog -n A -t 1 < /tmp/in_A > /tmp/out_A &
