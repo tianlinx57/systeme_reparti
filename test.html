@@ -90,7 +90,8 @@
     <label for="count">Combien voulez-vous en acheter:</label>
     <input type="number" id="count" min="1">
     <button id="submit" style="margin: 0 auto; display: block;">Submit</button>
-    <div style="margin-bottom: 50px"></div>
+    <button id="snapshot" style="margin: 10px auto; display: block;">Snapshot</button>
+    <div style="margin-bottom: 40px"></div>
     <hr>
     <b> Logs </b>
     <div id="logs" style="max-height: 40vh;overflow-y: scroll;"></div>
@@ -132,9 +133,17 @@
         ws.onmessage = function (evt) {
             const data = JSON.parse(evt.data);
             const maxElement = document.getElementById('max');
+            const input = document.getElementById('count');
+            console.log(data.number)
             if (data.number != null) {
                 maxElement.textContent = data.number;
             }
+            if ( data.mylock === 'locked') {
+                input.disabled = true;
+            } else if (data.mylock === 'unlocked') {
+                input.disabled = false;
+            }
+
             addToLog("Réception: " + evt.data);
         }
 
@@ -165,6 +174,17 @@
 
         return false;
     }
+
+    document.getElementById('snapshot').onclick = function (evt) {
+        const data = {text:"demand snapshot"};
+        const jsonData = JSON.stringify(data);
+
+        // 发送快照请求
+        ws.send(jsonData);
+        addToLog("Emission: " + data.text);
+        return false;
+    }
+
 
 
     // 前端调用后端API获取当前最高价格

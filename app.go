@@ -29,14 +29,16 @@ type message struct {
 type myData struct {
 	Number string `json:"number"`
 	Text   string `json:"text"`
+	MyLock string `json:"mylock"`
 }
 
 func handleWebSocket(conn *websocket.Conn) {
 	defer conn.Close()
 	nom *= -1
-	// 从客户端接收消息
 	msg := &myData{
 		Number: strconv.Itoa(stock),
+		Text:   "start",
+		MyLock: "unlocked",
 	}
 	err := conn.WriteJSON(msg)
 	if err != nil {
@@ -112,14 +114,19 @@ func handleWebSocket(conn *websocket.Conn) {
 			l.Println("unmarshal:", err)
 			return
 		}
+		//快照请求的判断
+		//
+		//
+		//
 		count, _ = strconv.Atoi(data.Number)
 		l.Printf("Received message: %d\n", count)
 
 		//排队中 请耐心等待
 		fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
 		msg := &myData{
-			Text:   "排队中 请耐心等待",
 			Number: strconv.Itoa(stock),
+			Text:   "排队中 请耐心等待",
+			MyLock: "locked",
 		}
 		err = conn.WriteJSON(msg)
 		if err != nil {
@@ -142,8 +149,9 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			//抢购成功 本次抢购 x 件
 			fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
 			msg := &myData{
-				Text:   "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
 				Number: strconv.Itoa(stock),
+				Text:   "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
+				MyLock: "unlocked",
 			}
 			err := conn.WriteJSON(msg)
 			if err != nil {
@@ -154,8 +162,9 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			//抢购失败 没货了 感谢您的参与
 			fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
 			msg := &myData{
-				Text:   "抢购失败 库存不足",
 				Number: strconv.Itoa(stock),
+				Text:   "抢购失败 库存不足",
+				MyLock: "unlocked",
 			}
 			err := conn.WriteJSON(msg)
 			if err != nil {
@@ -167,8 +176,9 @@ func handleMessage(msg message, conn *websocket.Conn) {
 		if stock == 0 {
 			//抢购结束 感谢您的参与
 			msg := &myData{
-				Text:   "抢购结束 感谢您的参与",
 				Number: strconv.Itoa(stock),
+				Text:   "抢购结束 感谢您的参与",
+				MyLock: "locked",
 			}
 			err := conn.WriteJSON(msg)
 			if err != nil {
@@ -193,6 +203,7 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			msg := &myData{
 				Text:   "抢购结束 感谢您的参与",
 				Number: strconv.Itoa(stock),
+				MyLock: "locked",
 			}
 			err = conn.WriteJSON(msg)
 			if err != nil {
