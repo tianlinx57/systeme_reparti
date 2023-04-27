@@ -118,7 +118,6 @@ func handleWebSocket(conn *websocket.Conn) {
 					msgType = permetSC
 				case "updateHorloge":
 					msgType = updateHorloge
-
 				default:
 					msgType = -1
 					l.Println("Invalid message type. Please try again.")
@@ -139,7 +138,7 @@ func handleWebSocket(conn *websocket.Conn) {
 				msgType: msgType,
 				count:   count,
 			}
-			if msgType == -1 {
+			if msgType == -1 || msgType == updateHorloge {
 				rcvmsg = ""
 				mutex.Unlock()
 				continue
