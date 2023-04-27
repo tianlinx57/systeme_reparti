@@ -138,7 +138,7 @@ func handleWebSocket(conn *websocket.Conn) {
 				msgType: msgType,
 				count:   count,
 			}
-			if msgType == -1 || msgType == updateHorloge {
+			if msgType == -1 {
 				rcvmsg = ""
 				mutex.Unlock()
 				continue
