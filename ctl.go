@@ -183,6 +183,7 @@ func (s *site) handleMessage(msg message) {
 	switch msg.msgType {
 	case request:
 		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
+		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[msg.sender][0] = 0
 		s.tab[msg.sender][1] = msg.logicalTime
 		//fmt.Printf("Sending ack from %d to %d with logical time %d\n", s.id, msg.sender, s.logicalTime)
@@ -190,6 +191,7 @@ func (s *site) handleMessage(msg message) {
 		//fmt.Printf("/=receiver=%d/=type=ack/=sender=%d/=hlg=%d\n", msg.sender, s.id, s.logicalTime)
 	case release:
 		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
+		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[msg.sender][0] = 1
 		s.tab[msg.sender][1] = msg.logicalTime
 		//如果不是最新的release就不要告诉app了（再看看逻辑）
@@ -205,12 +207,14 @@ func (s *site) handleMessage(msg message) {
 		}
 	case ack:
 		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
+		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		if s.tab[msg.sender][0] != 0 {
 			s.tab[msg.sender][0] = 2
 			s.tab[msg.sender][1] = msg.logicalTime
 		}
 	case demandeSC:
 		s.logicalTime = s.logicalTime + 1
+		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[s.id][0] = 0
 		s.tab[s.id][1] = s.logicalTime
 		for i := 1; i <= N; i++ {
@@ -225,6 +229,7 @@ func (s *site) handleMessage(msg message) {
 		inable = true
 	case finSC:
 		s.logicalTime = s.logicalTime + 1
+		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[s.id][0] = 1
 		s.tab[s.id][1] = s.logicalTime
 		for i := 1; i <= N; i++ {

@@ -19,6 +19,7 @@ type messageType int
 const (
 	updateSC messageType = iota
 	permetSC
+	updateHorloge
 )
 
 type message struct {
@@ -27,9 +28,10 @@ type message struct {
 }
 
 type myData struct {
-	Number string `json:"number"`
-	Text   string `json:"text"`
-	MyLock string `json:"mylock"`
+	Number  string `json:"number"`
+	Text    string `json:"text"`
+	MyLock  string `json:"mylock"`
+	Horloge string `json:"horloge"`
 }
 
 // 标准收
@@ -72,9 +74,10 @@ func handleWebSocket(conn *websocket.Conn) {
 	defer conn.Close()
 	nom *= -1
 	msg := &myData{
-		Number: strconv.Itoa(stock),
-		Text:   "start",
-		MyLock: "unlocked",
+		Number:  strconv.Itoa(stock),
+		Text:    "start",
+		MyLock:  "unlocked",
+		Horloge: strconv.Itoa(horloge),
 	}
 	err := conn.WriteJSON(msg)
 	if err != nil {
@@ -113,6 +116,9 @@ func handleWebSocket(conn *websocket.Conn) {
 					msgType = updateSC
 				case "permetSC":
 					msgType = permetSC
+				case "updateHorloge":
+					msgType = updateHorloge
+
 				default:
 					msgType = -1
 					l.Println("Invalid message type. Please try again.")
@@ -122,6 +128,11 @@ func handleWebSocket(conn *websocket.Conn) {
 			s_count := findval(rcvmsg, "count")
 			if s_count != "" {
 				count, _ = strconv.Atoi(s_count)
+			}
+
+			s_hlg := findval(rcvmsg, "hlg")
+			if s_hlg != "" {
+				horloge, _ = strconv.Atoi(s_hlg)
 			}
 
 			msg := message{
@@ -161,11 +172,12 @@ func handleWebSocket(conn *websocket.Conn) {
 
 		//排队中 请耐心等待
 		//fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
-		msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(0)))
+		msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)))
 		msg := &myData{
-			Number: strconv.Itoa(stock),
-			Text:   "排队中 请耐心等待",
-			MyLock: "locked",
+			Number:  strconv.Itoa(stock),
+			Text:    "排队中 请耐心等待",
+			MyLock:  "locked",
+			Horloge: strconv.Itoa(horloge),
 		}
 		err = conn.WriteJSON(msg)
 		if err != nil {
@@ -187,11 +199,12 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			stock -= count
 			//抢购成功 本次抢购 x 件
 			//fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
-			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(0)) + msg_format("count", strconv.Itoa(stock)))
+			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)) + msg_format("count", strconv.Itoa(stock)))
 			msg := &myData{
-				Number: strconv.Itoa(stock),
-				Text:   "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
-				MyLock: "unlocked",
+				Number:  strconv.Itoa(stock),
+				Text:    "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
+				MyLock:  "unlocked",
+				Horloge: strconv.Itoa(horloge),
 			}
 			err := conn.WriteJSON(msg)
 			if err != nil {
@@ -201,11 +214,12 @@ func handleMessage(msg message, conn *websocket.Conn) {
 		} else {
 			//抢购失败 没货了 感谢您的参与
 			//fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
-			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(0)) + msg_format("count", strconv.Itoa(stock)))
+			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)) + msg_format("count", strconv.Itoa(stock)))
 			msg := &myData{
-				Number: strconv.Itoa(stock),
-				Text:   "抢购失败 库存不足",
-				MyLock: "unlocked",
+				Number:  strconv.Itoa(stock),
+				Text:    "抢购失败 库存不足",
+				MyLock:  "unlocked",
+				Horloge: strconv.Itoa(horloge),
 			}
 			err := conn.WriteJSON(msg)
 			if err != nil {
@@ -217,9 +231,10 @@ func handleMessage(msg message, conn *websocket.Conn) {
 		if stock == 0 {
 			//抢购结束 感谢您的参与
 			msg := &myData{
-				Number: strconv.Itoa(stock),
-				Text:   "抢购结束 感谢您的参与",
-				MyLock: "locked",
+				Number:  strconv.Itoa(stock),
+				Text:    "抢购结束 感谢您的参与",
+				MyLock:  "locked",
+				Horloge: strconv.Itoa(horloge),
 			}
 			err := conn.WriteJSON(msg)
 			if err != nil {
@@ -242,9 +257,10 @@ func handleMessage(msg message, conn *websocket.Conn) {
 		if stock == 0 {
 			//抢购结束 感谢您的参与
 			msg := &myData{
-				Text:   "抢购结束 感谢您的参与",
-				Number: strconv.Itoa(stock),
-				MyLock: "locked",
+				Text:    "抢购结束 感谢您的参与",
+				Number:  strconv.Itoa(stock),
+				MyLock:  "locked",
+				Horloge: strconv.Itoa(horloge),
 			}
 			err = conn.WriteJSON(msg)
 			if err != nil {
@@ -254,13 +270,29 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			//conn.Close()
 			return
 		}
+	case updateHorloge:
+		//抢购结束 感谢您的参与
+		msg := &myData{
+			Text:    "更新时钟",
+			MyLock:  "unlocked",
+			Horloge: strconv.Itoa(horloge),
+		}
+		err := conn.WriteJSON(msg)
+		if err != nil {
+			fmt.Println("write:", err)
+			return
+		}
+		//conn.Close()
+		return
 	}
+
 }
 
 var nom int
 var stock = 10
 var mutex = &sync.Mutex{}
 var count int
+var horloge = 0
 
 func main() {
 	var p = flag.String("p", "4444", "n° de port")

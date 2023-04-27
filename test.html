@@ -85,7 +85,9 @@
             <button id="fermer">Fermer</button>
         </p>
     </form>
-    <p>Stock restant actuel:</p>
+    <div style="display: inline">Stock restant actuel:</div>
+    <div style="display: inline; float: right" id="horloge">0</div>
+    <div style="display: inline; float: right">horloge:&nbsp;&nbsp;&nbsp;</div>
     <div id="max" class="highestPrice">100</div>
     <label for="count">Combien voulez-vous en acheter:</label>
     <input type="number" id="count" min="1">
@@ -134,9 +136,12 @@
             const data = JSON.parse(evt.data);
             const maxElement = document.getElementById('max');
             const input = document.getElementById('count');
+            const horloge = document.getElementById('horloge');
             console.log(data.number)
             if (data.number != null) {
                 maxElement.textContent = data.number;
+            }if (data.horloge != null) {
+                horloge.textContent = data.horloge;
             }
             if ( data.mylock === 'locked') {
                 input.disabled = true;
