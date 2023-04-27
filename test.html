@@ -154,16 +154,18 @@
         document.getElementById('submit').onclick = function (evt) {
             const input = document.getElementById('count');
             const price = input.value;
-            //获取够买数量并重置input
-            addToLog("success achat");
-            input.value = '';
-            const data = {number: price};
-            addToLog("Pret: " + data.number);
-            const jsonData = JSON.stringify(data);
+            if (price !== ''){
+                //获取够买数量并重置input
+                addToLog("success achat");
+                input.value = '';
+                const data = {number: price};
+                addToLog("Pret: " + data.number);
+                const jsonData = JSON.stringify(data);
 
-            // 直接发送数据
-            ws.send(jsonData);
-            addToLog("Emission: " + data.number);
+                // 直接发送数据
+                ws.send(jsonData);
+                addToLog("Emission: " + data.number);
+            }
             return false;
         }
 
