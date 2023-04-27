@@ -37,6 +37,18 @@ type site struct {
 	tab         [N + 1][2]int
 }
 
+// 改进收发 标准函数
+var fieldsep = "/"
+var keyvalsep = "="
+
+func msg_format(key string, val string) string {
+	return fieldsep + keyvalsep + key + keyvalsep + val
+}
+
+func msg_send(msg string) {
+	fmt.Print(msg + "\n")
+}
+
 // 移除字符串中的不可打印字符
 func removeUnprintableChars(s string) string {
 	return strings.Map(func(r rune) rune {
@@ -137,7 +149,8 @@ func (s *site) handleMessage(msg message) {
 		s.tab[msg.sender][0] = 0
 		s.tab[msg.sender][1] = msg.logicalTime
 		//fmt.Printf("Sending ack from %d to %d with logical time %d\n", s.id, msg.sender, s.logicalTime)
-		fmt.Printf("/=receiver=%d/=type=ack/=sender=%d/=hlg=%d\n", msg.sender, s.id, s.logicalTime)
+		msg_send(msg_format("receiver", strconv.Itoa(msg.sender)) + msg_format("type", "ack") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
+		//fmt.Printf("/=receiver=%d/=type=ack/=sender=%d/=hlg=%d\n", msg.sender, s.id, s.logicalTime)
 	case release:
 		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
 		s.tab[msg.sender][0] = 1
@@ -150,7 +163,8 @@ func (s *site) handleMessage(msg message) {
 			}
 		}
 		if flag {
-			fmt.Printf("/=receiver=%d/=type=updateSC/=sender=%d/=hlg=%d/=count=%d\n", s.id*-1, s.id, s.logicalTime, msg.count)
+			msg_send(msg_format("receiver", strconv.Itoa(s.id*-1)) + msg_format("type", "updateSC") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)) + msg_format("count", strconv.Itoa(msg.count)))
+			//fmt.Printf("/=receiver=%d/=type=updateSC/=sender=%d/=hlg=%d/=count=%d\n", s.id*-1, s.id, s.logicalTime, msg.count)
 		}
 	case ack:
 		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
@@ -165,7 +179,8 @@ func (s *site) handleMessage(msg message) {
 		for i := 1; i <= N; i++ {
 			if i != s.id {
 				//fmt.Printf("Sending request from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
-				fmt.Printf("/=receiver=%d/=type=request/=sender=%d/=hlg=%d\n", i, s.id, s.logicalTime)
+				//fmt.Printf("/=receiver=%d/=type=request/=sender=%d/=hlg=%d\n", i, s.id, s.logicalTime)
+				msg_send(msg_format("receiver", strconv.Itoa(i)) + msg_format("type", "request") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 				//l := log.New(os.Stderr, "", 0)
 				//l.Printf("/=receiver=%d/=type=request/=sender=%d/=hlg=%d\n", i, s.id, s.logicalTime)
 			}
@@ -178,7 +193,8 @@ func (s *site) handleMessage(msg message) {
 		for i := 1; i <= N; i++ {
 			if i != s.id {
 				//fmt.Printf("Sending release from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
-				fmt.Printf("/=receiver=%d/=type=release/=sender=%d/=hlg=%d/=count=%d\n", i, s.id, s.logicalTime, msg.count)
+				//fmt.Printf("/=receiver=%d/=type=release/=sender=%d/=hlg=%d/=count=%d\n", i, s.id, s.logicalTime, msg.count)
+				msg_send(msg_format("receiver", strconv.Itoa(i)) + msg_format("type", "release") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)) + msg_format("count", strconv.Itoa(msg.count)))
 			}
 		}
 	}
@@ -200,7 +216,8 @@ func (s *site) checkCriticalSection() {
 			//一次demande只要通知上层进去一次就好 原来算法的漏洞 傻逼玩意
 			if inable {
 				//fmt.Printf("Sending debutSC from %d to %d \n", s.id, s.id*-1)
-				fmt.Printf("/=receiver=%d/=type=permetSC/=sender=%d/=hlg=%d\n", -1*s.id, s.id, s.logicalTime)
+				//fmt.Printf("/=receiver=%d/=type=permetSC/=sender=%d/=hlg=%d\n", -1*s.id, s.id, s.logicalTime)
+				msg_send(msg_format("receiver", strconv.Itoa(-1*s.id)) + msg_format("type", "permetSC") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 				inable = false
 			}
 

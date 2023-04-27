@@ -32,6 +32,18 @@ type myData struct {
 	MyLock string `json:"mylock"`
 }
 
+// 改进收发 标准函数
+var fieldsep = "/"
+var keyvalsep = "="
+
+func msg_format(key string, val string) string {
+	return fieldsep + keyvalsep + key + keyvalsep + val
+}
+
+func msg_send(msg string) {
+	fmt.Print(msg + "\n")
+}
+
 func handleWebSocket(conn *websocket.Conn) {
 	defer conn.Close()
 	nom *= -1
@@ -122,7 +134,8 @@ func handleWebSocket(conn *websocket.Conn) {
 		l.Printf("Received message: %d\n", count)
 
 		//排队中 请耐心等待
-		fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
+		//fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
+		msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(0)))
 		msg := &myData{
 			Number: strconv.Itoa(stock),
 			Text:   "排队中 请耐心等待",
@@ -147,7 +160,8 @@ func handleMessage(msg message, conn *websocket.Conn) {
 		if (stock-count) >= 0 && count > 0 {
 			stock -= count
 			//抢购成功 本次抢购 x 件
-			fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
+			//fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
+			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(0)) + msg_format("count", strconv.Itoa(stock)))
 			msg := &myData{
 				Number: strconv.Itoa(stock),
 				Text:   "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
@@ -160,7 +174,8 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			}
 		} else {
 			//抢购失败 没货了 感谢您的参与
-			fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
+			//fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
+			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(0)) + msg_format("count", strconv.Itoa(stock)))
 			msg := &myData{
 				Number: strconv.Itoa(stock),
 				Text:   "抢购失败 库存不足",
