@@ -49,6 +49,30 @@ func msg_send(msg string) {
 	fmt.Print(msg + "\n")
 }
 
+// 标准收
+func findval(msg string, key string) string {
+	if len(msg) < 4 {
+		return ""
+	}
+
+	sep := msg[0:1]
+	tab_allkeyvals := strings.Split(msg[1:], sep)
+
+	for _, keyval := range tab_allkeyvals {
+		//l := log.New(os.Stderr, "", 0)
+		//l.Printf(keyval)
+		if len(keyval) >= 4 {
+			equ := keyval[0:1]
+			tabkeyval := strings.Split(keyval[1:], equ)
+			if tabkeyval[0] == key {
+				return tabkeyval[1]
+			}
+		}
+	}
+
+	return ""
+}
+
 // 移除字符串中的不可打印字符
 func removeUnprintableChars(s string) string {
 	return strings.Map(func(r rune) rune {
@@ -75,50 +99,63 @@ func (s *site) run() {
 		rcvmsg = removeUnprintableChars(rcvmsg)
 		//
 		l.Printf("%d Received message: %s\n", s.id, rcvmsg)
-		separator := rcvmsg[0:1]
-		tab_allkeyval := strings.Split(rcvmsg[1:], separator)
-		//l.Printf("%q\n", tab_allkeyval)
-		for _, keyval := range tab_allkeyval {
-			tab_keyval := strings.Split(keyval[1:], keyval[0:1])
-			//l.Printf("  %q\n", tab_keyval)
-			//l.Printf("  key : %s  val : %s\n", tab_keyval[0], tab_keyval[1])
-			//如果不是自己该收的转发，应该发给app层的丢弃
-			if tab_keyval[0] == "receiver" {
-				receiver, _ = strconv.Atoi(tab_keyval[1])
-				if receiver != s.id {
-					if receiver > 0 {
-						//l.Printf("zhuanfa")
-						fmt.Println(rcvmsg)
-					}
-					msgType = -1
-					break
-				}
-			} else if tab_keyval[0] == "type" {
-				switch tab_keyval[1] {
-				case "request":
-					msgType = request
-				case "release":
-					msgType = release
-				case "ack":
-					msgType = ack
-				case "demandeSC":
-					msgType = demandeSC
-				case
-					"finSC":
-					msgType = finSC
-				default:
-					msgType = -1
-					l.Println("Invalid message type. Please try again.")
-					break
-				}
-			} else if tab_keyval[0] == "sender" {
-				sender, _ = strconv.Atoi(tab_keyval[1])
-			} else if tab_keyval[0] == "hlg" {
-				logicalTime, _ = strconv.Atoi(tab_keyval[1])
-			} else if tab_keyval[0] == "count" {
-				count, _ = strconv.Atoi(tab_keyval[1])
-			}
 
+		//separator := rcvmsg[0:1]
+		//tab_allkeyval := strings.Split(rcvmsg[1:], separator)
+		////l.Printf("%q\n", tab_allkeyval)
+		//for _, keyval := range tab_allkeyval {
+		//	tab_keyval := strings.Split(keyval[1:], keyval[0:1])
+		//	//l.Printf("  %q\n", tab_keyval)
+		//	//l.Printf("  key : %s  val : %s\n", tab_keyval[0], tab_keyval[1])
+		//	//如果不是自己该收的转发，应该发给app层的丢弃
+
+		s_receiver := findval(rcvmsg, "receiver")
+		if s_receiver != "" {
+			receiver, _ = strconv.Atoi(s_receiver)
+			if receiver != s.id {
+				if receiver > 0 {
+					//l.Printf("zhuanfa")
+					fmt.Println(rcvmsg)
+					mutex.Unlock()
+					continue
+				}
+				msgType = -1
+			}
+		}
+
+		s_type := findval(rcvmsg, "type")
+		if s_type != "" {
+			switch s_type {
+			case "request":
+				msgType = request
+			case "release":
+				msgType = release
+			case "ack":
+				msgType = ack
+			case "demandeSC":
+				msgType = demandeSC
+			case
+				"finSC":
+				msgType = finSC
+			default:
+				msgType = -1
+				l.Println("Invalid message type. Please try again.")
+			}
+		}
+
+		s_sender := findval(rcvmsg, "sender")
+		if s_sender != "" {
+			sender, _ = strconv.Atoi(s_sender)
+		}
+
+		s_hlg := findval(rcvmsg, "hlg")
+		if s_hlg != "" {
+			logicalTime, _ = strconv.Atoi(s_hlg)
+		}
+
+		s_count := findval(rcvmsg, "count")
+		if s_hlg != "" {
+			count, _ = strconv.Atoi(s_count)
 		}
 
 		if msgType != release && msgType != finSC {

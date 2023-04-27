@@ -32,6 +32,30 @@ type myData struct {
 	MyLock string `json:"mylock"`
 }
 
+// 标准收
+func findval(msg string, key string) string {
+	if len(msg) < 4 {
+		return ""
+	}
+
+	sep := msg[0:1]
+	tab_allkeyvals := strings.Split(msg[1:], sep)
+
+	for _, keyval := range tab_allkeyvals {
+		//l := log.New(os.Stderr, "", 0)
+		//l.Printf(keyval)
+		if len(keyval) >= 4 {
+			equ := keyval[0:1]
+			tabkeyval := strings.Split(keyval[1:], equ)
+			if tabkeyval[0] == key {
+				return tabkeyval[1]
+			}
+		}
+	}
+
+	return ""
+}
+
 // 改进收发 标准函数
 var fieldsep = "/"
 var keyvalsep = "="
@@ -69,35 +93,37 @@ func handleWebSocket(conn *websocket.Conn) {
 			msgType = -1
 			mutex.Lock()
 			l.Printf("%d message reçu : %s\n", nom, rcvmsg)
-			tab_allkeyval := strings.Split(rcvmsg[1:], rcvmsg[0:1])
+			//tab_allkeyval := strings.Split(rcvmsg[1:], rcvmsg[0:1])
 			//l.Printf("%q\n", tab_allkeyval)
-			for _, keyval := range tab_allkeyval {
-				tab_keyval := strings.Split(keyval[1:], keyval[0:1])
-				//l.Printf("  %q\n", tab_keyval)
-				//l.Printf("  key : %s  val : %s\n", tab_keyval[0], tab_keyval[1])
-				//如果不是自己该收丢弃
-				if tab_keyval[0] == "receiver" {
-					receiver, _ = strconv.Atoi(tab_keyval[1])
-					if receiver != nom {
-						msgType = -1
-						break
-					}
-				} else if tab_keyval[0] == "type" {
-					switch tab_keyval[1] {
-					case "updateSC":
-						msgType = updateSC
-					case "permetSC":
-						msgType = permetSC
-					default:
-						msgType = -1
-						l.Println("Invalid message type. Please try again.")
-						break
-					}
-				} else if tab_keyval[0] == "count" {
-					count, _ = strconv.Atoi(tab_keyval[1])
-				}
 
+			s_receiver := findval(rcvmsg, "receiver")
+			if s_receiver != "" {
+				receiver, _ = strconv.Atoi(s_receiver)
+				if receiver != nom {
+					msgType = -1
+					mutex.Unlock()
+					continue
+				}
 			}
+
+			s_type := findval(rcvmsg, "type")
+			if s_type != "" {
+				switch s_type {
+				case "updateSC":
+					msgType = updateSC
+				case "permetSC":
+					msgType = permetSC
+				default:
+					msgType = -1
+					l.Println("Invalid message type. Please try again.")
+				}
+			}
+
+			s_count := findval(rcvmsg, "count")
+			if s_count != "" {
+				count, _ = strconv.Atoi(s_count)
+			}
+
 			msg := message{
 				msgType: msgType,
 				count:   count,
