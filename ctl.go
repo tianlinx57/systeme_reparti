@@ -98,7 +98,7 @@ func (s *site) run() {
 		// 移除输入字符串中的不可打印字符 !!! 很关键 gpt4教的
 		rcvmsg = removeUnprintableChars(rcvmsg)
 		//
-		l.Printf("%d Received message: %s\n", s.id, rcvmsg)
+		l.Printf("%d message reçu: %s\n", s.id, rcvmsg)
 
 		//separator := rcvmsg[0:1]
 		//tab_allkeyval := strings.Split(rcvmsg[1:], separator)
@@ -139,7 +139,7 @@ func (s *site) run() {
 				msgType = finSC
 			default:
 				msgType = -1
-				l.Println("Invalid message type. Please try again.")
+				//l.Println("Invalid message type. Please try again.")
 			}
 		}
 
@@ -182,7 +182,7 @@ func (s *site) run() {
 func (s *site) handleMessage(msg message) {
 	switch msg.msgType {
 	case request:
-		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
+		s.logicalTime = recaler(s.logicalTime, msg.logicalTime)
 		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[msg.sender][0] = 0
 		s.tab[msg.sender][1] = msg.logicalTime
@@ -190,7 +190,7 @@ func (s *site) handleMessage(msg message) {
 		msg_send(msg_format("receiver", strconv.Itoa(msg.sender)) + msg_format("type", "ack") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		//fmt.Printf("/=receiver=%d/=type=ack/=sender=%d/=hlg=%d\n", msg.sender, s.id, s.logicalTime)
 	case release:
-		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
+		s.logicalTime = recaler(s.logicalTime, msg.logicalTime)
 		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[msg.sender][0] = 1
 		s.tab[msg.sender][1] = msg.logicalTime
@@ -206,7 +206,7 @@ func (s *site) handleMessage(msg message) {
 			//fmt.Printf("/=receiver=%d/=type=updateSC/=sender=%d/=hlg=%d/=count=%d\n", s.id*-1, s.id, s.logicalTime, msg.count)
 		}
 	case ack:
-		s.logicalTime = max(s.logicalTime, msg.logicalTime) + 1
+		s.logicalTime = recaler(s.logicalTime, msg.logicalTime)
 		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		if s.tab[msg.sender][0] != 0 {
 			s.tab[msg.sender][0] = 2
@@ -267,11 +267,11 @@ func (s *site) checkCriticalSection() {
 	}
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
+func recaler(x, y int) int {
+	if x < y {
+		return y + 1
 	}
-	return b
+	return x + 1
 }
 
 var mutex = &sync.Mutex{}
