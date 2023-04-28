@@ -116,10 +116,9 @@ func (s *site) run() {
 				if receiver > 0 {
 					//l.Printf("zhuanfa")
 					fmt.Println(rcvmsg)
-					mutex.Unlock()
-					continue
 				}
-				msgType = -1
+				mutex.Unlock()
+				continue
 			}
 		}
 
