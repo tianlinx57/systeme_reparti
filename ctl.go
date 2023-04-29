@@ -21,6 +21,8 @@ const (
 	ack
 	demandeSC
 	finSC
+	demandeSnap
+	finSnap
 )
 
 type message struct {
@@ -136,6 +138,12 @@ func (s *site) run() {
 			case
 				"finSC":
 				msgType = finSC
+			case
+				"demandeSnap":
+				msgType = demandeSnap
+			case
+				"finSnap":
+				msgType = finSnap
 			default:
 				msgType = -1
 				//l.Println("Invalid message type. Please try again.")
@@ -231,6 +239,9 @@ func (s *site) handleMessage(msg message) {
 		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
 		s.tab[s.id][0] = 1
 		s.tab[s.id][1] = s.logicalTime
+		count := last_stock - msg.count
+		last_stock = msg.count
+		snapshot = append(snapshot, ",horloge_vectorielle:["+strconv.Itoa(s.tab[1][1])+","+strconv.Itoa(s.tab[2][1])+","+strconv.Itoa(s.tab[3][1])+"],site:"+strconv.Itoa(s.id)+",nombre_achat:"+strconv.Itoa(count))
 		for i := 1; i <= N; i++ {
 			if i != s.id {
 				//fmt.Printf("Sending release from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
@@ -238,8 +249,38 @@ func (s *site) handleMessage(msg message) {
 				msg_send(msg_format("receiver", strconv.Itoa(i)) + msg_format("type", "release") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)) + msg_format("count", strconv.Itoa(msg.count)))
 			}
 		}
+	case demandeSnap:
+		if msg.sender > 0 {
+			s.logicalTime = recaler(s.logicalTime, msg.logicalTime)
+			s.tab[msg.sender][1] = msg.logicalTime
+			s.tab[s.id][1] = s.logicalTime
+		} else {
+			s.logicalTime = s.logicalTime + 1
+			s.tab[s.id][1] = s.logicalTime
+		}
+		if couleur == 0 {
+			msg_send(msg_format("receiver", strconv.Itoa((s.id%N)+1)+msg_format("type", "demandeSnap")+msg_format("sender", strconv.Itoa(s.id))+msg_format("hlg", strconv.Itoa(s.logicalTime))))
+			snapshot_time := "[" + strconv.Itoa(s.tab[1][1]) + "," + strconv.Itoa(s.tab[2][1]) + "," + strconv.Itoa(s.tab[3][1]) + "]"
+			msg_send(msg_format("receiver", strconv.Itoa((s.id*(-1)))+msg_format("type", "donneSnap")+msg_format("sender", strconv.Itoa(s.id))+msg_format("hlg", strconv.Itoa(s.logicalTime))+msg_format("snapshot", strings.Join(snapshot, "@"))+msg_format("snapshot_time", snapshot_time)))
+			couleur = 1
+		} else if couleur == 1 {
+			msg_send(msg_format("receiver", strconv.Itoa((s.id%N)+1)+msg_format("type", "finSnap")+msg_format("sender", strconv.Itoa(s.id))+msg_format("hlg", strconv.Itoa(s.logicalTime))))
+			msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
+			couleur = 0
+		}
+
+	case finSnap:
+		s.logicalTime = recaler(s.logicalTime, msg.logicalTime)
+		s.tab[s.id][1] = s.logicalTime
+		s.tab[msg.sender][1] = msg.logicalTime
+		msg_send(msg_format("receiver", strconv.Itoa(s.id*(-1))) + msg_format("type", "updateHorloge") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)))
+		if couleur == 1 {
+			couleur = 0
+			msg_send(msg_format("receiver", strconv.Itoa((s.id%N)+1)+msg_format("type", "finSnap")+msg_format("sender", strconv.Itoa(s.id))+msg_format("hlg", strconv.Itoa(s.logicalTime))))
+		}
+
 	}
-	if msg.msgType != demandeSC && msg.msgType != finSC {
+	if msg.msgType != demandeSC && msg.msgType != finSC && msg.msgType != demandeSnap && msg.msgType != finSnap {
 		s.checkCriticalSection()
 	}
 }
@@ -275,6 +316,11 @@ func recaler(x, y int) int {
 
 var mutex = &sync.Mutex{}
 var inable = true
+var couleur = 0
+
+// 因为我们每次传递的是剩余库存值，要和上次相减得出本次购买量
+var last_stock = 10
+var snapshot = make([]string, 0)
 
 func main() {
 	var nom = 1

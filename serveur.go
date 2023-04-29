@@ -47,7 +47,7 @@ func ws_send(text, mylock string) {
 func ws_receive() {
 	defer ws_close()
 	nom *= -1
-	ws_send("start", "unlocked")
+	ws_send("start", status)
 	//msg := &myData{
 	//	Number:  strconv.Itoa(stock),
 	//	Text:    "start",
@@ -70,15 +70,22 @@ func ws_receive() {
 		}
 		//快照请求的判断
 		//
-		//
-		//
+		if data.Text == "demand snapshot" {
+			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSnap") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)))
+			status = "locked"
+			ws_send("生成快照中 请耐心等待", status)
+			mutex.Unlock()
+			continue
+		}
+
 		count, _ = strconv.Atoi(data.Number)
 		l.Printf("Received message: %d\n", count)
 
 		//排队中 请耐心等待
 		//fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
 		msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)))
-		ws_send("排队中 请耐心等待", "locked")
+		status = "locked"
+		ws_send("排队中 请耐心等待", status)
 		//msg := &myData{
 		//	Number:  strconv.Itoa(stock),
 		//	Text:    "排队中 请耐心等待",

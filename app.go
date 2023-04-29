@@ -18,18 +18,23 @@ const (
 	updateSC messageType = iota
 	permetSC
 	updateHorloge
+	donneSnap
 )
 
 type message struct {
-	msgType messageType
-	count   int
+	msgType       messageType
+	count         int
+	snapshot      string
+	snapshot_time string
 }
 
 type myData struct {
-	Number  string `json:"number"`
-	Text    string `json:"text"`
-	MyLock  string `json:"mylock"`
-	Horloge string `json:"horloge"`
+	Number       string `json:"number"`
+	Text         string `json:"text"`
+	MyLock       string `json:"mylock"`
+	Horloge      string `json:"horloge"`
+	Snapshot     string `json:"snapshot"`
+	Snapshottime string `json:"snapshot_time"`
 }
 
 // 标准收
@@ -104,6 +109,8 @@ func receive() {
 				msgType = permetSC
 			case "updateHorloge":
 				msgType = updateHorloge
+			case "donneSnap":
+				msgType = donneSnap
 
 			default:
 				msgType = -1
@@ -116,14 +123,19 @@ func receive() {
 			count, _ = strconv.Atoi(s_count)
 		}
 
+		s_snapshot := findval(rcvmsg, "snapshot")
+		s_snapshot_time := findval(rcvmsg, "snapshot_time")
+
 		s_hlg := findval(rcvmsg, "hlg")
 		if s_hlg != "" {
 			horloge, _ = strconv.Atoi(s_hlg)
 		}
 
 		msg := message{
-			msgType: msgType,
-			count:   count,
+			msgType:       msgType,
+			count:         count,
+			snapshot:      s_snapshot,
+			snapshot_time: s_snapshot_time,
 		}
 		if msgType == -1 {
 			rcvmsg = ""
@@ -146,7 +158,8 @@ func handleMessage(msg message) {
 			//抢购成功 本次抢购 x 件
 			//fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
 			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)) + msg_format("count", strconv.Itoa(stock)))
-			ws_send("抢购成功 本次抢购"+strconv.Itoa(count)+"件", "unlocked")
+			status = "unlocked" //是否禁止前端输入
+			ws_send("抢购成功 本次抢购"+strconv.Itoa(count)+"件", status)
 			//msg := &myData{
 			//	Number:  strconv.Itoa(stock),
 			//	Text:    "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
@@ -157,7 +170,8 @@ func handleMessage(msg message) {
 			//抢购失败 没货了 感谢您的参与
 			//fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
 			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)) + msg_format("count", strconv.Itoa(stock)))
-			ws_send("抢购失败 库存不足", "unlocked")
+			status = "unlocked" //是否禁止前端输入
+			ws_send("抢购失败 库存不足", status)
 			//msg := &myData{
 			//	Number:  strconv.Itoa(stock),
 			//	Text:    "抢购失败 库存不足",
@@ -168,7 +182,8 @@ func handleMessage(msg message) {
 
 		if stock == 0 {
 			//抢购结束 感谢您的参与
-			ws_send("抢购结束 感谢您的参与", "locked")
+			status = "locked" //是否禁止前端输入
+			ws_send("抢购结束 感谢您的参与", status)
 			//msg := &myData{
 			//	Number:  strconv.Itoa(stock),
 			//	Text:    "抢购结束 感谢您的参与",
@@ -181,17 +196,15 @@ func handleMessage(msg message) {
 		}
 	case updateSC:
 		stock = msg.count
-		msg := &myData{
-			Number: strconv.Itoa(stock),
-		}
-		err := ws.WriteJSON(msg)
-		if err != nil {
-			fmt.Println("write:", err)
-			return
-		}
+		ws_send("更新库存", status)
+		//msg := &myData{
+		//	Number: strconv.Itoa(stock),
+		//}
+		//}
 		if stock == 0 {
 			//抢购结束 感谢您的参与
-			ws_send("抢购结束 感谢您的参与", "locked")
+			status = "locked" //是否禁止前端输入
+			ws_send("抢购结束 感谢您的参与", status)
 			//msg := &myData{
 			//	Text:    "抢购结束 感谢您的参与",
 			//	Number:  strconv.Itoa(stock),
@@ -204,11 +217,7 @@ func handleMessage(msg message) {
 		}
 	case updateHorloge:
 		//抢购结束 感谢您的参与
-		if stock > 0 {
-			ws_send("更新时钟", "unlocked")
-		} else {
-			ws_send("更新时钟", "locked")
-		}
+		ws_send("更新时钟", status)
 		//msg := &myData{
 		//	Text:    "更新时钟",
 		//	MyLock:  "unlocked",
@@ -218,6 +227,22 @@ func handleMessage(msg message) {
 
 		//conn.Close()
 		return
+
+	case donneSnap:
+		status = "unlocked"
+		msg := &myData{
+			Number:       strconv.Itoa(stock),
+			Text:         "备份内容",
+			MyLock:       "unlocked",
+			Horloge:      strconv.Itoa(horloge),
+			Snapshot:     msg.snapshot,
+			Snapshottime: msg.snapshot_time,
+		}
+		err := ws.WriteJSON(msg)
+		if err != nil {
+			display_d("write:", string(err.Error()))
+			return
+		}
 	}
 
 }
@@ -227,6 +252,7 @@ var stock = 10
 var mutex = &sync.Mutex{}
 var count int
 var horloge = 0
+var status = "unlocked" //是否禁止前端输入
 
 func main() {
 	var p = flag.String("p", "4444", "n° de port")
