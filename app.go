@@ -261,9 +261,7 @@ func main() {
 	fmt.Printf(string(nom))
 	flag.Parse()
 
-	go receive()
 	http.HandleFunc("/ws", do_websocket)
-
 	http.ListenAndServe(*addr+":"+*p, nil)
 
 }

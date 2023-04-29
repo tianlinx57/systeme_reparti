@@ -28,6 +28,7 @@ func do_websocket(w http.ResponseWriter, r *http.Request) {
 	}
 	display_d("ws_create", "Client connecté")
 	ws = conn
+	go receive()
 	go ws_receive()
 }
 func ws_send(text, mylock string) {
