@@ -2,6 +2,7 @@
 <html>
 <meta charset="utf-8">
 <head>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/5.0.2/css/bootstrap.min.css">
     <title>Plateforme d'achat en ligne</title>
     <style>
         body {
@@ -65,7 +66,7 @@
         }
 
         .highestPrice {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             margin-bottom: 20px;
             color: #333;
@@ -88,11 +89,35 @@
     <div style="display: inline">Stock restant actuel:</div>
     <div style="display: inline; float: right" id="horloge">0</div>
     <div style="display: inline; float: right">horloge:&nbsp;&nbsp;&nbsp;</div>
-    <div id="max" class="highestPrice">100</div>
+    <div id="max" style="height: 50px" class="highestPrice"></div>
     <label for="count">Combien voulez-vous en acheter:</label>
     <input type="number" id="count" min="1">
     <button id="submit" style="margin: 0 auto; display: block;">Submit</button>
+
     <button id="snapshot" style="margin: 10px auto; display: block;">Snapshot</button>
+    <div style="justify-content: space-between;">
+        <div style="display: inline">snapshot_time:&nbsp;&nbsp;&nbsp;</div>
+        <div style="display: inline" id="snapshotTime"></div>
+    </div>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <table class="table table-striped table-bordered text-center" style="width:400px; margin: 0 auto">
+                    <thead>
+                    <tr>
+                        <th>horloge_vectorielle</th>
+                        <th>site</th>
+                        <th>nombre-chat</th>
+                    </tr>
+                    </thead>
+                    <tbody id="my-table">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     <div style="margin-bottom: 40px"></div>
     <hr>
     <b> Logs </b>
@@ -137,7 +162,7 @@
             const maxElement = document.getElementById('max');
             const input = document.getElementById('count');
             const horloge = document.getElementById('horloge');
-            console.log(data.number)
+            const snapshotTime = document.getElementById('snapshotTime')
             if (data.number != null) {
                 maxElement.textContent = data.number;
             }if (data.horloge != null) {
@@ -150,6 +175,31 @@
             }
 
             addToLog("Réception: " + evt.data);
+
+            if ( data.snapshot !== ""){
+                console.log("snapshot" + data.snapshot)
+                const table = document.getElementById("my-table");
+                table.innerHTML = "";
+                const snapshot = data.snapshot.split("@");
+                for(let i = 0; i < snapshot.length; i++){
+                    const elements = snapshot[i].split("*");
+                    const row = document.createElement("tr");
+
+                    for (let j = 0; j < elements.length; j++) {
+                        const element = elements[j].trim();
+                        if (element !== "") {
+                            const columns = element.split(":");
+                            const cell = document.createElement("td");
+                            cell.textContent = columns[1];
+                            row.appendChild(cell);
+                        }
+                    }
+                    table.appendChild(row);
+                }
+            }
+            if (data.snapshot_time !== "") {
+                snapshotTime.textContent = data.snapshot_time;
+            }
         }
 
         ws.onerror = function (evt) {
@@ -191,64 +241,6 @@
         addToLog("Emission: " + data.text);
         return false;
     }
-
-
-
-    // 前端调用后端API获取当前最高价格
-    function getMaxPrice() {
-        // 替换为实际的后端API URL
-        fetch("http://localhost:8080")
-            .then(response => response.json())
-            .then(data => log.alert(data));
-    }
-
-    // 前端调用后端API发起拍卖请求
-    function putMyPrice(price) {
-        // 替换为实际的后端API URL
-        fetch("http://localhost/put_my_price", {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({price: price})
-        })
-            .then(response => {
-                if (response.ok) {
-                    // 提交成功，重新获取最高价格并更新显示
-                    getMaxPrice();
-                    alert("出价成功！");
-                } else {
-                    // 提交失败，显示错误信息
-                    alert("出价失败：" + response.statusText);
-                }
-            })
-            .catch(error => console.error(error));
-    }
-
-    // 提交出价按钮的点击事件处理程序
-    function submitBid() {
-        // 获取输入的出价
-        let bidInput = document.getElementById("bidInput");
-        let bidAmount = parseFloat(bidInput.value);
-        if (isNaN(bidAmount)) {
-            alert("请输入有效的数字！");
-            return;
-        }
-        // 获取当前最高价格
-        let highestBid = parseFloat(document.getElementById("highestBidDisplay").innerHTML.substr(1));
-        // 判断出价是否高于当前最高价格
-        if (bidAmount > highestBid) {
-            // 发起拍卖请求
-            putMyPrice(bidAmount);
-        } else {
-            alert("您的出价必须高于当前最高价格！");
-        }
-        // 清空输入框
-        bidInput.value = "";
-    }
-
-    // 页面加载时获取最高价格并显示
-    getMaxPrice();
 </script>
 </body>
 </html>

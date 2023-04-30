@@ -51,10 +51,12 @@ func do_websocket(w http.ResponseWriter, r *http.Request) {
 // Fonction pour envoyer des messages WebSocket
 func ws_send(text, mylock string) {
 	msg := &myData{
-		Number:  strconv.Itoa(stock),
-		Text:    text,
-		MyLock:  mylock,
-		Horloge: strconv.Itoa(horloge),
+		Number:       strconv.Itoa(stock),
+		Text:         text,
+		MyLock:       mylock,
+		Horloge:      strconv.Itoa(horloge),
+		Snapshot:     "",
+		Snapshottime: "",
 	}
 	err := ws.WriteJSON(msg)
 	if err != nil {

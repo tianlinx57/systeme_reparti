@@ -331,8 +331,8 @@ func (s *site) handleMessage(msg message) {
 		// Calculer la différence de billets vendus
 		count := last_stock - msg.count
 		last_stock = msg.count
-		snapshot = append(snapshot, ",horloge_vectorielle:["+strconv.Itoa(horloge_vec[1])+","+strconv.Itoa(horloge_vec[2])+","+strconv.Itoa(horloge_vec[3])+"],site:"+strconv.Itoa(s.id)+",nombre_achat:"+strconv.Itoa(count))
 		// Envoyer un message de libération à tous les autres sites
+		snapshot = append(snapshot, "*horloge_vectorielle:["+strconv.Itoa(horloge_vec[1])+"，"+strconv.Itoa(horloge_vec[2])+"，"+strconv.Itoa(horloge_vec[3])+"]*site:"+strconv.Itoa(s.id)+"*nombre_achat:"+strconv.Itoa(count))
 		for i := 1; i <= N; i++ {
 			if i != s.id {
 				msg_send(msg_format("receiver", strconv.Itoa(i)) + msg_format("type", "release") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)) + msg_format("count", strconv.Itoa(msg.count)) + msg_format("h1", strconv.Itoa(horloge_vec[1])) + msg_format("h2", strconv.Itoa(horloge_vec[2])) + msg_format("h3", strconv.Itoa(horloge_vec[3])))
