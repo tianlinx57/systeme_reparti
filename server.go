@@ -11,14 +11,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Définition de la structure de données pour le message JSON
 type myData struct {
 	Number string `json:"number"`
 }
 
+// Fonction pour gérer la connexion WebSocket
 func handleWebSocket(conn *websocket.Conn) {
 	defer conn.Close()
 
-	// 从客户端接收消息
+	// Recevoir des messages du client
 	go func() {
 		for {
 			_, message, err := conn.ReadMessage()
@@ -33,11 +35,11 @@ func handleWebSocket(conn *websocket.Conn) {
 				return
 			}
 			num, _ := strconv.Atoi(data.Number)
-			fmt.Printf("Received message: %d\n", num)
+			fmt.Printf("Message reçu : %d\n", num)
 		}
 	}()
 
-	// 向客户端发送数字
+	// Envoyer des nombres au client
 	num := 0
 	for {
 		num = num + 1
@@ -58,6 +60,8 @@ func main() {
 	var addr = flag.String("addr", "localhost", "nom/adresse machine")
 
 	flag.Parse()
+
+	// Définir la fonction de gestion pour l'URI "/ws"
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool { return true },
@@ -67,8 +71,10 @@ func main() {
 			fmt.Println("upgrade:", err)
 			return
 		}
-		fmt.Println("WebSocket connected")
+		fmt.Println("WebSocket connecté")
 		handleWebSocket(conn)
 	})
+
+	// Démarrer le serveur HTTP
 	http.ListenAndServe(*addr+":"+*port, nil)
 }

@@ -11,14 +11,28 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Définition de la structure de données pour le message JSON
+type myData struct {
+	Number  string `json:"number"`
+	Text    string `json:"text"`
+	MyLock  string `json:"mylock"`
+	Horloge string `json:"horloge"`
+}
+
+// Connexion WebSocket
 var ws *websocket.Conn
+
+// Log d'erreur standard
 var stderr = log.New(os.Stderr, "", 0)
 
+// Fonction pour afficher des informations de débogage
 func display_d(where string, what string) {
 	stderr.Printf(" + %-8.8s : %s\n", where, what)
 }
 
+// Fonction pour gérer une connexion WebSocket
 func do_websocket(w http.ResponseWriter, r *http.Request) {
+	// Configurer l'upgrader pour la connexion WebSocket
 	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
@@ -27,11 +41,14 @@ func do_websocket(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("upgrade:", err)
 		return
 	}
+	// Afficher un message de connexion réussie
 	display_d("ws_create", "Client connecté")
 	ws = conn
 	go receive()
 	go ws_receive()
 }
+
+// Fonction pour envoyer des messages WebSocket
 func ws_send(text, mylock string) {
 	msg := &myData{
 		Number:  strconv.Itoa(stock),
@@ -46,16 +63,14 @@ func ws_send(text, mylock string) {
 	}
 }
 
+// Fonction pour recevoir des messages WebSocket
 func ws_receive() {
+	// Fermer la connexion WebSocket à la fin de la réception
 	defer ws_close()
+	// Inverser le signe du nom pour désigner le récepteur
 	nom *= -1
+	// Envoyer un message de démarrage au client
 	ws_send("start", status)
-	//msg := &myData{
-	//	Number:  strconv.Itoa(stock),
-	//	Text:    "start",
-	//	MyLock:  "unlocked",
-	//	Horloge: strconv.Itoa(horloge),
-	//}
 	l := log.New(os.Stderr, "", 0)
 	for {
 		_, message, err := ws.ReadMessage()
@@ -70,36 +85,27 @@ func ws_receive() {
 			l.Println("unmarshal:", err)
 			return
 		}
-		//快照请求的判断
-		//
+
+		// Si le message est une demande de snapshot, envoyer une demande au serveur
 		if data.Text == "demand snapshot" {
 			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSnap") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)))
 			status = "locked"
-			ws_send("生成快照中 请耐心等待", status)
+			ws_send("L'instantané est en cours de génération, veuillez patienter", status)
 			mutex.Unlock()
 			continue
 		}
 
 		count, _ = strconv.Atoi(data.Number)
 		l.Printf("Received message: %d\n", count)
-
-		//排队中 请耐心等待
-		//fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
+		// Envoyer une demande d'exclusion mutuelle au serve
 		msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "demandeSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)))
 		status = "locked"
-		ws_send("排队中 请耐心等待", status)
-		//msg := &myData{
-		//	Number:  strconv.Itoa(stock),
-		//	Text:    "排队中 请耐心等待",
-		//	MyLock:  "locked",
-		//	Horloge: strconv.Itoa(horloge),
-		//}
+		ws_send("Attendre en ligne s'il vous plaît soyez patient", status)
 		mutex.Unlock()
-		// /=type=demandeSC/=sender=1/=hlg=0/=receiver=-1
-		// /=type=demandeSC/=sender=1/=hlg=0/=receiver=-1
 	}
-
 }
+
+// Fonction pour fermer la connexion WebSocket
 func ws_close() {
 	display_d("ws_close", "Fin des réceptions => fermeture de la websocket")
 	ws.Close()
