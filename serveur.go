@@ -11,14 +11,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Définition de la structure de données pour le message JSON
-type myData struct {
-	Number  string `json:"number"`
-	Text    string `json:"text"`
-	MyLock  string `json:"mylock"`
-	Horloge string `json:"horloge"`
-}
-
 // Connexion WebSocket
 var ws *websocket.Conn
 
