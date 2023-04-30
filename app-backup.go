@@ -1,10 +1,11 @@
+// Package principal
 package main
 
+// Importation des bibliothèques nécessaires
 import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"os"
@@ -12,8 +13,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
+// Déclaration des constantes pour les types de messages
 type messageType int
 
 const (
@@ -21,20 +25,31 @@ const (
 	permetSC
 )
 
+// Déclaration des variables globales
+var nom int
+var stock = 10
+var mutex = &sync.Mutex{}
+var count int
+
+// Structure pour les messages
 type message struct {
 	msgType messageType
 	count   int
 }
 
+// Structure pour les données
 type myData struct {
 	Number string `json:"number"`
 	Text   string `json:"text"`
 }
 
+// Fonction pour gérer la connexion WebSocket
 func handleWebSocket(conn *websocket.Conn) {
+	// Fermeture de la connexion à la fin de la fonction
 	defer conn.Close()
 	nom *= -1
-	// 从客户端接收消息
+
+	// Envoi du message initial au client
 	msg := &myData{
 		Number: strconv.Itoa(stock),
 	}
@@ -43,6 +58,8 @@ func handleWebSocket(conn *websocket.Conn) {
 		fmt.Println("write:", err)
 		return
 	}
+
+	// Lancement d'une goroutine pour traiter les messages reçus
 	go func() {
 		var rcvmsg string
 		l := log.New(os.Stderr, "", 0)
@@ -56,12 +73,8 @@ func handleWebSocket(conn *websocket.Conn) {
 			mutex.Lock()
 			l.Printf("%d message reçu : %s\n", nom, rcvmsg)
 			tab_allkeyval := strings.Split(rcvmsg[1:], rcvmsg[0:1])
-			//l.Printf("%q\n", tab_allkeyval)
 			for _, keyval := range tab_allkeyval {
 				tab_keyval := strings.Split(keyval[1:], keyval[0:1])
-				//l.Printf("  %q\n", tab_keyval)
-				//l.Printf("  key : %s  val : %s\n", tab_keyval[0], tab_keyval[1])
-				//如果不是自己该收丢弃
 				if tab_keyval[0] == "receiver" {
 					receiver, _ = strconv.Atoi(tab_keyval[1])
 					if receiver != nom {
@@ -98,6 +111,8 @@ func handleWebSocket(conn *websocket.Conn) {
 			rcvmsg = ""
 		}
 	}()
+
+	// Lecture des messages entrants et traitement des données
 	l := log.New(os.Stderr, "", 0)
 	for {
 		_, message, err := conn.ReadMessage()
@@ -115,10 +130,9 @@ func handleWebSocket(conn *websocket.Conn) {
 		count, _ = strconv.Atoi(data.Number)
 		l.Printf("Received message: %d\n", count)
 
-		//排队中 请耐心等待
 		fmt.Printf("/=receiver=%d/=type=demandeSC/=sender=%d/=hlg=%d\n", nom*(-1), nom, 0)
 		msg := &myData{
-			Text:   "排队中 请耐心等待",
+			Text:   "Attendre en ligne s'il vous plaît soyez patient",
 			Number: strconv.Itoa(stock),
 		}
 		err = conn.WriteJSON(msg)
@@ -127,22 +141,24 @@ func handleWebSocket(conn *websocket.Conn) {
 			return
 		}
 		mutex.Unlock()
-		// /=type=demandeSC/=sender=1/=hlg=0/=receiver=-1
-		// /=type=demandeSC/=sender=1/=hlg=0/=receiver=-1
 	}
-
 }
+
+// Fonction pour traiter les messages reçus
 func handleMessage(msg message, conn *websocket.Conn) {
 	switch msg.msgType {
 	case permetSC:
-		//轮到您了 正在尝试抢购
+		// Attendre avant de traiter le message
 		time.Sleep(time.Duration(2) * time.Second)
+
+		// Vérifier si l'achat est possible
 		if (stock-count) >= 0 && count > 0 {
+			// Mise à jour du stock
 			stock -= count
-			//抢购成功 本次抢购 x 件
 			fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
+			// Envoi du message de réussite d'achat
 			msg := &myData{
-				Text:   "抢购成功 本次抢购" + strconv.Itoa(count) + "件",
+				Text:   "L'achat est réussi, cet achat" + strconv.Itoa(count) + "foi",
 				Number: strconv.Itoa(stock),
 			}
 			err := conn.WriteJSON(msg)
@@ -151,10 +167,10 @@ func handleMessage(msg message, conn *websocket.Conn) {
 				return
 			}
 		} else {
-			//抢购失败 没货了 感谢您的参与
+			// Envoi du message d'échec d'achat
 			fmt.Printf("/=receiver=%d/=type=finSC/=sender=%d/=hlg=%d/=count=%d\n", nom*-1, nom, 0, stock)
 			msg := &myData{
-				Text:   "抢购失败 库存不足",
+				Text:   "Échec de l'achat, rupture de stock",
 				Number: strconv.Itoa(stock),
 			}
 			err := conn.WriteJSON(msg)
@@ -164,10 +180,10 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			}
 		}
 
+		// Envoi du message de fin d'achat si le stock est épuisé
 		if stock == 0 {
-			//抢购结束 感谢您的参与
 			msg := &myData{
-				Text:   "抢购结束 感谢您的参与",
+				Text:   "L'achat est terminé, merci pour votre participation",
 				Number: strconv.Itoa(stock),
 			}
 			err := conn.WriteJSON(msg)
@@ -175,10 +191,10 @@ func handleMessage(msg message, conn *websocket.Conn) {
 				fmt.Println("write:", err)
 				return
 			}
-			//conn.Close()
 			return
 		}
 	case updateSC:
+		// Mise à jour du stock
 		stock = msg.count
 		msg := &myData{
 			Number: strconv.Itoa(stock),
@@ -188,10 +204,11 @@ func handleMessage(msg message, conn *websocket.Conn) {
 			fmt.Println("write:", err)
 			return
 		}
+
+		// Envoi du message de fin d'achat si le stock est épuisé
 		if stock == 0 {
-			//抢购结束 感谢您的参与
 			msg := &myData{
-				Text:   "抢购结束 感谢您的参与",
+				Text:   "L'achat est terminé, merci pour votre participation",
 				Number: strconv.Itoa(stock),
 			}
 			err = conn.WriteJSON(msg)
@@ -199,34 +216,39 @@ func handleMessage(msg message, conn *websocket.Conn) {
 				fmt.Println("write:", err)
 				return
 			}
-			//conn.Close()
 			return
 		}
 	}
 }
 
-var nom int
-var stock = 10
-var mutex = &sync.Mutex{}
-var count int
-
+// Fonction principale
 func main() {
+	// Définition des options de ligne de commande
 	var p = flag.String("p", "4444", "n° de port")
 	var addr = flag.String("addr", "localhost", "nom/adresse machine")
 	flag.IntVar(&nom, "n", 1, "nom de site app")
 	fmt.Printf(string(nom))
 	flag.Parse()
+
+	// Configuration du gestionnaire de WebSocket
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r
+
+
+	// Configuration du gestionnaire de WebSocket
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		// Configuration de l'upgrader WebSocket
 		var upgrader = websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool { return true },
 		}
+		// Mise à niveau de la connexion HTTP en connexion WebSocket
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			fmt.Println("upgrade:", err)
 			return
 		}
-		//fmt.Println("WebSocket connected")
+		// Gestion de la connexion WebSocket
 		handleWebSocket(conn)
 	})
+	// Lancement du serveur HTTP
 	http.ListenAndServe(*addr+":"+*p, nil)
 }
