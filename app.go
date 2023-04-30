@@ -23,7 +23,7 @@ const (
 	donneSnap
 )
 
-// Déclaration de la structure message
+// Déclaration de la structure message.
 type message struct {
 	msgType       messageType
 	count         int
