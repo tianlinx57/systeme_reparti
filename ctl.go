@@ -286,7 +286,7 @@ func (s *site) handleMessage(msg message) {
 		s.tab[s.id][1] = s.logicalTime
 		count := last_stock - msg.count
 		last_stock = msg.count
-		snapshot = append(snapshot, ",horloge_vectorielle:["+strconv.Itoa(horloge_vec[1])+","+strconv.Itoa(horloge_vec[2])+","+strconv.Itoa(horloge_vec[3])+"],site:"+strconv.Itoa(s.id)+",nombre_achat:"+strconv.Itoa(count))
+		snapshot = append(snapshot, "*horloge_vectorielle:["+strconv.Itoa(horloge_vec[1])+"，"+strconv.Itoa(horloge_vec[2])+"，"+strconv.Itoa(horloge_vec[3])+"]*site:"+strconv.Itoa(s.id)+"*nombre_achat:"+strconv.Itoa(count))
 		for i := 1; i <= N; i++ {
 			if i != s.id {
 				//fmt.Printf("Sending release from %d to %d with logical time %d\n", s.id, i, s.logicalTime)
