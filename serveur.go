@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 var ws *websocket.Conn

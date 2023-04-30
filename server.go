@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type myData struct {
