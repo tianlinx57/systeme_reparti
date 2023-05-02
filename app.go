@@ -184,7 +184,7 @@ func handleMessage(msg message) {
 			// Envoyer un message pour signaler la fin de l'achat
 			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)) + msg_format("count", strconv.Itoa(stock)))
 			status = "unlocked"
-			ws_send("L'achat est réussi, cet achat"+strconv.Itoa(count)+"foi", status)
+			ws_send("L'achat est réussi, tu as achete "+strconv.Itoa(count)+" fois", status)
 		} else {
 			// Envoyer un message pour signaler l'échec de l'achat
 			msg_send(msg_format("receiver", strconv.Itoa(nom*(-1))) + msg_format("type", "finSC") + msg_format("sender", strconv.Itoa(nom)) + msg_format("hlg", strconv.Itoa(horloge)) + msg_format("count", strconv.Itoa(stock)))
