@@ -175,8 +175,8 @@ func handleMessage(msg message) {
 	// Traitement en fonction du type de message
 	switch msg.msgType {
 	case permetSC:
-		// Attendre 2 secondes avant de traiter le message
-		time.Sleep(time.Duration(2) * time.Second)
+		// Attendre quelques secondes avant de traiter le message
+		time.Sleep(time.Duration(4) * time.Second)
 		// Vérifier si le stock est suffisant pour l'achat
 		if (stock-count) >= 0 && count > 0 {
 			// Réduire le stock
