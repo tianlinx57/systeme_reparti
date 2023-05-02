@@ -23,7 +23,7 @@ const (
 	donneSnap
 )
 
-// Déclaration de la structure message.
+// Déclaration de la structure message
 type message struct {
 	msgType       messageType
 	count         int
@@ -175,8 +175,8 @@ func handleMessage(msg message) {
 	// Traitement en fonction du type de message
 	switch msg.msgType {
 	case permetSC:
-		// Attendre quelques secondes avant de traiter le message
-		time.Sleep(time.Duration(4) * time.Second)
+		// Attendre 2 secondes avant de traiter le message
+		time.Sleep(time.Duration(2) * time.Second)
 		// Vérifier si le stock est suffisant pour l'achat
 		if (stock-count) >= 0 && count > 0 {
 			// Réduire le stock
@@ -215,15 +215,11 @@ func handleMessage(msg message) {
 
 	case donneSnap:
 		// Traiter les données de la sauvegarde
-		if stock != 0 {
-			status = "unlocked"
-		} else {
-			status = "locked"
-		}
+		status = "unlocked"
 		msg := &myData{
 			Number:       strconv.Itoa(stock),
 			Text:         "sauvegarde",
-			MyLock:       status,
+			MyLock:       "unlocked",
 			Horloge:      strconv.Itoa(horloge),
 			Snapshot:     msg.snapshot,
 			Snapshottime: msg.snapshot_time,
