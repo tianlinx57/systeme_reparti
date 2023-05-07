@@ -252,7 +252,6 @@ func (s *site) handleMessage(msg message) {
 	case release:
 		// Mettre à jour l'horloge logique du site
 		s.logicalTime = recaler(s.logicalTime, msg.logicalTime)
-
 		// Mettre à jour l'horloge vectorielle
 		arr := []int{0, msg.h1, msg.h2, msg.h3}
 		horloge_vec = calVec(horloge_vec, arr)
@@ -274,7 +273,9 @@ func (s *site) handleMessage(msg message) {
 		}
 		// Mettre à jour le nombre de billets vendus si les conditions sont remplies
 		if flag {
+			last_stock = msg.count
 			msg_send(msg_format("receiver", strconv.Itoa(s.id*-1)) + msg_format("type", "updateSC") + msg_format("sender", strconv.Itoa(s.id)) + msg_format("hlg", strconv.Itoa(s.logicalTime)) + msg_format("count", strconv.Itoa(msg.count)))
+
 		}
 	case ack:
 		// Mettre à jour l'horloge logique du site
